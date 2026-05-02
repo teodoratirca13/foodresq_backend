@@ -12,4 +12,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
     List<Listing> findByStatus(ListingStatus status);
 
     List<Listing> findByStatusAndType(ListingStatus status, ListingType type);
+
+    List<Listing> findByOwnerId(Long ownerId);
+
 }

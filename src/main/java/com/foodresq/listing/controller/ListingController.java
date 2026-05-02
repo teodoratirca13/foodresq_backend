@@ -47,4 +47,27 @@ public class ListingController {
     public Listing completeListing(@PathVariable Long id) {
         return listingService.completeListing(id);
     }
+
+    @PostMapping("/{id}/cancel")
+    public Listing cancelListing(@PathVariable Long id) {
+        return listingService.cancelListing(id);
+    }
+
+    @GetMapping("/{id}")
+    public Listing getListingById(@PathVariable Long id) {
+        return listingService.getListingById(id);
+    }
+    @GetMapping("/owner/{ownerId}")
+    public List<Listing> getListingsByOwner(@PathVariable Long ownerId) {
+        return listingService.getListingsByOwner(ownerId);
+    }
+
+    @GetMapping("/nearby")
+    public List<Listing> getNearbyListings(
+            @RequestParam Double lat,
+            @RequestParam Double lng,
+            @RequestParam(defaultValue = "5") Double radiusKm
+    ) {
+        return listingService.getNearbyListings(lat, lng, radiusKm);
+    }
 }

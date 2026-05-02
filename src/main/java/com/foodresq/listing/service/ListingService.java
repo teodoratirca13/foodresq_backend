@@ -91,4 +91,48 @@ public class ListingService {
 
         return listingRepository.save(listing);
     }
+
+    public Listing cancelListing(Long listingId) {
+        Listing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new RuntimeException("Listing-ul nu exista"));
+
+        if (listing.getStatus() == ListingStatus.COMPLETED) {
+            throw new RuntimeException("Un listing finalizat nu mai poate fi anulat");
+        }
+
+        listing.setStatus(ListingStatus.CANCELLED);
+
+        return listingRepository.save(listing);
+    }
+    public Listing getListingById(Long id) {
+        return listingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Listing-ul nu exista"));
+    }
+    public List<Listing> getListingsByOwner(Long ownerId) {
+        return listingRepository.findByOwnerId(ownerId);
+    }
+
+    public List<Listing> getNearbyListings(Double lat, Double lng, Double radiusKm) {
+        return listingRepository.findByStatus(ListingStatus.ACTIVE)
+                .stream()
+                .filter(listing -> distanceKm(lat, lng, listing.getLatitude(), listing.getLongitude()) <= radiusKm)
+                .toList();
+    }
+
+    private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
+        final int earthRadiusKm = 6371;
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2)
+                * Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return earthRadiusKm * c;
+    }
 }
