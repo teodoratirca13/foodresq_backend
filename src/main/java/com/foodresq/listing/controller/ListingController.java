@@ -1,6 +1,7 @@
 package com.foodresq.listing.controller;
 
 import com.foodresq.listing.dto.CreateListingRequest;
+import com.foodresq.listing.dto.ListingResponse;
 import com.foodresq.listing.entity.Listing;
 import com.foodresq.listing.enums.ListingType;
 import com.foodresq.listing.service.ListingService;
@@ -18,17 +19,17 @@ public class ListingController {
     private final ListingService listingService;
 
     @PostMapping
-    public Listing createListing(@Valid @RequestBody CreateListingRequest request) {
+    public ListingResponse createListing(@Valid @RequestBody CreateListingRequest request) {
         return listingService.createListing(request);
     }
 
     @GetMapping
-    public List<Listing> getListings(@RequestParam(required = false) ListingType type) {
+    public List<ListingResponse> getListings(@RequestParam(required = false) ListingType type) {
         return listingService.getActiveListings(type);
     }
 
     @PostMapping("/{id}/reserve")
-    public Listing reserveSale(
+    public ListingResponse reserveSale(
             @PathVariable Long id,
             @RequestParam Long userId
     ) {
@@ -36,7 +37,7 @@ public class ListingController {
     }
 
     @PostMapping("/{id}/claim")
-    public Listing claimDonation(
+    public ListingResponse claimDonation(
             @PathVariable Long id,
             @RequestParam Long ongId
     ) {
@@ -44,26 +45,26 @@ public class ListingController {
     }
 
     @PostMapping("/{id}/complete")
-    public Listing completeListing(@PathVariable Long id) {
+    public ListingResponse completeListing(@PathVariable Long id) {
         return listingService.completeListing(id);
     }
 
     @PostMapping("/{id}/cancel")
-    public Listing cancelListing(@PathVariable Long id) {
+    public ListingResponse cancelListing(@PathVariable Long id) {
         return listingService.cancelListing(id);
     }
 
     @GetMapping("/{id}")
-    public Listing getListingById(@PathVariable Long id) {
+    public ListingResponse getListingById(@PathVariable Long id) {
         return listingService.getListingById(id);
     }
     @GetMapping("/owner/{ownerId}")
-    public List<Listing> getListingsByOwner(@PathVariable Long ownerId) {
+    public List<ListingResponse> getListingsByOwner(@PathVariable Long ownerId) {
         return listingService.getListingsByOwner(ownerId);
     }
 
     @GetMapping("/nearby")
-    public List<Listing> getNearbyListings(
+    public List<ListingResponse> getNearbyListings(
             @RequestParam Double lat,
             @RequestParam Double lng,
             @RequestParam(defaultValue = "5") Double radiusKm

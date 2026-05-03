@@ -1,6 +1,7 @@
 package com.foodresq.listing.service;
 
 import com.foodresq.listing.dto.CreateListingRequest;
+import com.foodresq.listing.dto.ListingResponse;
 import com.foodresq.listing.entity.Listing;
 import com.foodresq.listing.enums.ListingStatus;
 import com.foodresq.listing.enums.ListingType;
@@ -17,12 +18,42 @@ public class ListingService {
 
     private final ListingRepository listingRepository;
 
-    public Listing createListing(CreateListingRequest request) {
+    public ListingResponse createListing(CreateListingRequest request) {
+
+        if (request.getExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Expiration date must be in the future");
+        }
+
+        if (request.getType() == ListingType.DONATION && request.getPrice().doubleValue() != 0) {
+            throw new RuntimeException("Donations must have a price of 0");
+        }
+
+        if (request.getType() == ListingType.SALE && request.getPrice().doubleValue() <= 0) {
+            throw new RuntimeException("Sale items must have a price greater than 0");
+        }
+
+        if (request.getType() == ListingType.SALE) {
+            if (request.getMinimumPrice() == null) {
+                throw new RuntimeException("Sale items must have a minimum price");
+            }
+
+            if (request.getDiscountPercentage() == null) {
+                throw new RuntimeException("Sale items must have a discount percentage");
+            }
+
+            if (request.getMinimumPrice().compareTo(request.getPrice()) > 0) {
+                throw new RuntimeException("Minimum price cannot be higher than the initial price");
+            }
+        }
+
         Listing listing = Listing.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .quantity(request.getQuantity())
                 .price(request.getPrice())
+                .originalPrice(request.getPrice())
+                .minimumPrice(request.getMinimumPrice())
+                .discountPercentage(request.getDiscountPercentage())
                 .expirationDate(request.getExpirationDate())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
@@ -32,90 +63,109 @@ public class ListingService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return listingRepository.save(listing);
+        Listing saved = listingRepository.save(listing);
+        return mapToResponse(saved);
     }
 
-    public List<Listing> getActiveListings(ListingType type) {
+    public List<ListingResponse> getActiveListings(ListingType type) {
         if (type == null) {
-            return listingRepository.findByStatus(ListingStatus.ACTIVE);
+            return listingRepository.findByStatus(ListingStatus.ACTIVE)
+                    .stream()
+                    .map(this::mapToResponse)
+                    .toList();
         }
 
-        return listingRepository.findByStatusAndType(ListingStatus.ACTIVE, type);
+        return listingRepository.findByStatus(ListingStatus.ACTIVE)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
-    public Listing reserveSale(Long listingId, Long userId) {
+    public ListingResponse reserveSale(Long listingId, Long userId) {
         Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new RuntimeException("Listing-ul nu exista"));
+                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
 
         if (listing.getType() != ListingType.SALE) {
-            throw new RuntimeException("Doar produsele de vanzare pot fi rezervate");
+            throw new RuntimeException("Only items for sale can be reserved");
         }
 
         if (listing.getStatus() != ListingStatus.ACTIVE) {
-            throw new RuntimeException("Listing-ul nu este activ");
+            throw new RuntimeException("The listing is not active");
         }
 
         listing.setStatus(ListingStatus.RESERVED);
         listing.setReservedByUserId(userId);
 
-        return listingRepository.save(listing);
+        Listing saved = listingRepository.save(listing);
+        return mapToResponse(saved);
     }
 
-    public Listing claimDonation(Long listingId, Long ongId) {
+    public ListingResponse claimDonation(Long listingId, Long ongId) {
         Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new RuntimeException("Listing-ul nu exista"));
+                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
 
         if (listing.getType() != ListingType.DONATION) {
-            throw new RuntimeException("Doar donatiile pot fi revendicate");
+            throw new RuntimeException("Only items for donation can be claimed");
         }
 
         if (listing.getStatus() != ListingStatus.ACTIVE) {
-            throw new RuntimeException("Donatia nu este activa");
+            throw new RuntimeException("The donation does not exist!");
         }
 
         listing.setStatus(ListingStatus.RESERVED);
         listing.setReservedByUserId(ongId);
 
-        return listingRepository.save(listing);
+        Listing saved = listingRepository.save(listing);
+        return mapToResponse(saved);
     }
 
-    public Listing completeListing(Long listingId) {
+    public ListingResponse completeListing(Long listingId) {
         Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new RuntimeException("Listing-ul nu exista"));
+                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
 
         if (listing.getStatus() != ListingStatus.RESERVED) {
-            throw new RuntimeException("Doar listing-urile rezervate pot fi finalizate");
+            throw new RuntimeException("Only reserved listings can be completed");
         }
 
         listing.setStatus(ListingStatus.COMPLETED);
 
-        return listingRepository.save(listing);
+        Listing saved = listingRepository.save(listing);
+        return mapToResponse(saved);
     }
 
-    public Listing cancelListing(Long listingId) {
+    public ListingResponse cancelListing(Long listingId) {
         Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new RuntimeException("Listing-ul nu exista"));
+                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
 
         if (listing.getStatus() == ListingStatus.COMPLETED) {
-            throw new RuntimeException("Un listing finalizat nu mai poate fi anulat");
+            throw new RuntimeException("A completed listing can no longer be cancelled");
         }
 
         listing.setStatus(ListingStatus.CANCELLED);
 
-        return listingRepository.save(listing);
-    }
-    public Listing getListingById(Long id) {
-        return listingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Listing-ul nu exista"));
-    }
-    public List<Listing> getListingsByOwner(Long ownerId) {
-        return listingRepository.findByOwnerId(ownerId);
+        Listing saved = listingRepository.save(listing);
+        return mapToResponse(saved);
     }
 
-    public List<Listing> getNearbyListings(Double lat, Double lng, Double radiusKm) {
+    public ListingResponse getListingById(Long id) {
+        Listing listing = listingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
+
+        return mapToResponse(listing);
+    }
+
+    public List<ListingResponse> getListingsByOwner(Long ownerId) {
+        return listingRepository.findByOwnerId(ownerId)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    public List<ListingResponse> getNearbyListings(Double lat, Double lng, Double radiusKm) {
         return listingRepository.findByStatus(ListingStatus.ACTIVE)
                 .stream()
                 .filter(listing -> distanceKm(lat, lng, listing.getLatitude(), listing.getLongitude()) <= radiusKm)
+                .map(this::mapToResponse)
                 .toList();
     }
 
@@ -134,5 +184,21 @@ public class ListingService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return earthRadiusKm * c;
+    }
+    private ListingResponse mapToResponse(Listing listing) {
+        return ListingResponse.builder()
+                .id(listing.getId())
+                .title(listing.getTitle())
+                .description(listing.getDescription())
+                .quantity(listing.getQuantity())
+                .price(listing.getPrice())
+                .expirationDate(listing.getExpirationDate())
+                .latitude(listing.getLatitude())
+                .longitude(listing.getLongitude())
+                .type(listing.getType())
+                .status(listing.getStatus())
+                .ownerId(listing.getOwnerId())
+                .createdAt(listing.getCreatedAt())
+                .build();
     }
 }

@@ -1,51 +1,26 @@
-package com.foodresq.listing.entity;
+package com.foodresq.listing.dto;
 
 import com.foodresq.listing.enums.ListingStatus;
 import com.foodresq.listing.enums.ListingType;
-import jakarta.persistence.*;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class Listing {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class ListingResponse {
     private Long id;
-
     private String title;
-
     private String description;
-
     private Integer quantity;
-
     private BigDecimal price;
-    private BigDecimal originalPrice;
-    private BigDecimal minimumPrice;
-    private Integer discountPercentage;
-
     private LocalDateTime expirationDate;
-
     private Double latitude;
-
     private Double longitude;
-
-    @Enumerated(EnumType.STRING)
     private ListingType type;
-
-    @Enumerated(EnumType.STRING)
     private ListingStatus status;
-
     private Long ownerId;
-
-    private Long reservedByUserId;
-
     private LocalDateTime createdAt;
 }

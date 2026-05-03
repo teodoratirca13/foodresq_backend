@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import jakarta.validation.constraints.Max;
 
 @Getter
 @Setter
@@ -24,6 +25,13 @@ public class CreateListingRequest {
     @NotNull
     @DecimalMin("0.0")
     private BigDecimal price;
+
+    @DecimalMin("0.0")
+    private BigDecimal minimumPrice;
+
+    @Min(0)
+    @Max(100)
+    private Integer discountPercentage;
 
     @NotNull
     private LocalDateTime expirationDate;
