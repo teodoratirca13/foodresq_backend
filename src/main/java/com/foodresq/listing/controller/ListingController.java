@@ -83,4 +83,11 @@ public class ListingController {
     ) {
         return listingService.getNearbyListings(lat, lng, radiusKm);
     }
+    @DeleteMapping("/{id}")
+    public void deleteListing(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        listingService.deleteListing(id, authentication.getName());
     }
+}

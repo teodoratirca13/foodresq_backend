@@ -249,4 +249,22 @@ public class ListingService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+    public void deleteListing(Long listingId, String email) {
+        User user = getUserFromEmail(email);
+
+        Listing listing = listingRepository.findById(listingId)
+                .orElseThrow(() -> new RuntimeException("Listing does not exist"));
+
+        //validare owner
+        if (!listing.getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Only owner can delete listing");
+        }
+
+        //nu poti sterge daca e complet
+        if (listing.getStatus() == ListingStatus.COMPLETED) {
+            throw new RuntimeException("Cannot delete completed listing");
+        }
+
+        listingRepository.delete(listing);
+    }
 }

@@ -4,6 +4,7 @@ import com.foodresq.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -28,7 +29,17 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/listings/**").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/listings", "/api/listings/**").permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/listings").hasRole("BUSINESS")
+                        .requestMatchers(HttpMethod.POST, "/api/listings/*/reserve").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/listings/*/claim").hasRole("ONG")
+                        .requestMatchers(HttpMethod.POST, "/api/listings/*/complete").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/listings/*/cancel").authenticated()
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/listings/**").authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
