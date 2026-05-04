@@ -5,6 +5,7 @@ import com.foodresq.listing.dto.ListingResponse;
 import com.foodresq.listing.entity.Listing;
 import com.foodresq.listing.enums.ListingStatus;
 import com.foodresq.listing.enums.ListingType;
+import com.foodresq.listing.enums.ProductCategory;
 import com.foodresq.listing.repository.ListingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,9 @@ public class ListingService {
             throw new RuntimeException("Sale items must have a price greater than 0");
         }
 
+        if (request.getCategory() == null) {
+            throw new RuntimeException("Category is required");
+        }
         if (request.getType() == ListingType.SALE) {
             if (request.getMinimumPrice() == null) {
                 throw new RuntimeException("Sale items must have a minimum price");
@@ -60,26 +64,13 @@ public class ListingService {
                 .longitude(request.getLongitude())
                 .type(request.getType())
                 .owner(owner)
+                .category(request.getCategory())
                 .status(ListingStatus.ACTIVE)
                 .createdAt(LocalDateTime.now())
                 .build();
 
         Listing saved = listingRepository.save(listing);
         return mapToResponse(saved);
-    }
-
-    public List<ListingResponse> getActiveListings(ListingType type) {
-        if (type == null) {
-            return listingRepository.findByStatus(ListingStatus.ACTIVE)
-                    .stream()
-                    .map(this::mapToResponse)
-                    .toList();
-        }
-
-        return listingRepository.findByStatus(ListingStatus.ACTIVE)
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
     }
 
     public ListingResponse reserveSale(Long listingId, String email) {
@@ -217,6 +208,7 @@ public class ListingService {
                 .expirationDate(listing.getExpirationDate())
                 .latitude(listing.getLatitude())
                 .longitude(listing.getLongitude())
+                .category(listing.getCategory())
                 .type(listing.getType())
                 .status(listing.getStatus())
 
@@ -266,5 +258,14 @@ public class ListingService {
         }
 
         listingRepository.delete(listing);
+    }
+    public List<ListingResponse> getActiveListings(ListingType type, ProductCategory category) {
+
+        return listingRepository.findByStatus(ListingStatus.ACTIVE)
+                .stream()
+                .filter(l -> type == null || l.getType() == type)
+                .filter(l -> category == null || l.getCategory() == category)
+                .map(this::mapToResponse)
+                .toList();
     }
 }

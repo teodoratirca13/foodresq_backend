@@ -2,6 +2,7 @@ package com.foodresq.listing.dto;
 
 import com.foodresq.listing.enums.ListingStatus;
 import com.foodresq.listing.enums.ListingType;
+import com.foodresq.listing.enums.ProductCategory;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -27,4 +28,5 @@ public class ListingResponse {
     private Long reservedByUserId;
     private String reservedByUserName;
     private LocalDateTime createdAt;
+    private ProductCategory category;
 }

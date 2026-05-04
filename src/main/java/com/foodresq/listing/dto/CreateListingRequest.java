@@ -1,6 +1,7 @@
 package com.foodresq.listing.dto;
 
 import com.foodresq.listing.enums.ListingType;
+import com.foodresq.listing.enums.ProductCategory;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -44,5 +45,7 @@ public class CreateListingRequest {
 
     @NotNull
     private ListingType type;
+
+    private ProductCategory category;
 
 }

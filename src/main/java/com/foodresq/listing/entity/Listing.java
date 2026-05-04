@@ -2,7 +2,9 @@ package com.foodresq.listing.entity;
 
 import com.foodresq.listing.enums.ListingStatus;
 import com.foodresq.listing.enums.ListingType;
+import com.foodresq.listing.enums.ProductCategory;
 import com.foodresq.user.entity.User;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -53,4 +55,7 @@ public class Listing {
     private User reservedByUser;
 
     private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    private ProductCategory category;
 }

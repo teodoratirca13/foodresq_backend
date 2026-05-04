@@ -4,6 +4,7 @@ import com.foodresq.listing.dto.CreateListingRequest;
 import com.foodresq.listing.dto.ListingResponse;
 import com.foodresq.listing.entity.Listing;
 import com.foodresq.listing.enums.ListingType;
+import com.foodresq.listing.enums.ProductCategory;
 import com.foodresq.listing.service.ListingService;
 import org.springframework.security.core.Authentication;
 import jakarta.validation.Valid;
@@ -25,11 +26,6 @@ public class ListingController {
             Authentication authentication
     ) {
         return listingService.createListing(request, authentication.getName());
-    }
-
-    @GetMapping
-    public List<ListingResponse> getListings(@RequestParam(required = false) ListingType type) {
-        return listingService.getActiveListings(type);
     }
 
     @PostMapping("/{id}/reserve")
@@ -89,5 +85,13 @@ public class ListingController {
             Authentication authentication
     ) {
         listingService.deleteListing(id, authentication.getName());
+    }
+
+    @GetMapping
+    public List<ListingResponse> getListings(
+            @RequestParam(required = false) ListingType type,
+            @RequestParam(required = false) ProductCategory category
+    ) {
+        return listingService.getActiveListings(type, category);
     }
 }
