@@ -22,5 +22,9 @@ public class ListingResponse {
     private ListingType type;
     private ListingStatus status;
     private Long ownerId;
+    private String ownerName;
+
+    private Long reservedByUserId;
+    private String reservedByUserName;
     private LocalDateTime createdAt;
 }

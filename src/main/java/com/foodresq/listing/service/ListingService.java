@@ -23,8 +23,7 @@ public class ListingService {
 
     public ListingResponse createListing(CreateListingRequest request, String email){
 
-        User owner = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User owner = getUserFromEmail(email);
 
         if (request.getExpirationDate().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Expiration date must be in the future");
@@ -85,6 +84,7 @@ public class ListingService {
 
     public ListingResponse reserveSale(Long listingId, String email) {
 
+        User user=getUserFromEmail(email);
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
 
@@ -96,9 +96,6 @@ public class ListingService {
             throw new RuntimeException("The listing is not active");
         }
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
         listing.setStatus(ListingStatus.RESERVED);
         listing.setReservedByUser(user);
 
@@ -107,7 +104,7 @@ public class ListingService {
     }
 
     public ListingResponse claimDonation(Long listingId, String email) {
-
+        User user = getUserFromEmail(email);
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
 
@@ -119,8 +116,6 @@ public class ListingService {
             throw new RuntimeException("The donation does not exist!");
         }
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
         listing.setStatus(ListingStatus.RESERVED);
         listing.setReservedByUser(user);
@@ -129,12 +124,23 @@ public class ListingService {
         return mapToResponse(saved);
     }
 
-    public ListingResponse completeListing(Long listingId) {
+    public ListingResponse completeListing(Long listingId, String email) {
+        User user = getUserFromEmail(email);
+
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
 
         if (listing.getStatus() != ListingStatus.RESERVED) {
             throw new RuntimeException("Only reserved listings can be completed");
+        }
+
+        boolean isOwner = listing.getOwner().getId().equals(user.getId());
+
+        boolean isReservedUser = listing.getReservedByUser() != null
+                && listing.getReservedByUser().getId().equals(user.getId());
+
+        if (!isOwner && !isReservedUser) {
+            throw new RuntimeException("You are not allowed to complete this listing");
         }
 
         listing.setStatus(ListingStatus.COMPLETED);
@@ -143,9 +149,15 @@ public class ListingService {
         return mapToResponse(saved);
     }
 
-    public ListingResponse cancelListing(Long listingId) {
+    public ListingResponse cancelListing(Long listingId, String email) {
+        User user = getUserFromEmail(email);
+
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
+
+        if (!listing.getOwner().getId().equals(user.getId())) {
+            throw new RuntimeException("Only the owner can cancel this listing");
+        }
 
         if (listing.getStatus() == ListingStatus.COMPLETED) {
             throw new RuntimeException("A completed listing can no longer be cancelled");
@@ -207,8 +219,34 @@ public class ListingService {
                 .longitude(listing.getLongitude())
                 .type(listing.getType())
                 .status(listing.getStatus())
-                .ownerId(listing.getOwner().getId())
+
+                .ownerId(
+                        listing.getOwner() != null
+                                ? listing.getOwner().getId()
+                                : null
+                )
+                .ownerName(
+                        listing.getOwner() != null
+                                ? listing.getOwner().getName()
+                                : null
+                )
+
+                .reservedByUserId(
+                        listing.getReservedByUser() != null
+                                ? listing.getReservedByUser().getId()
+                                : null
+                )
+                .reservedByUserName(
+                        listing.getReservedByUser() != null
+                                ? listing.getReservedByUser().getName()
+                                : null
+                )
+
                 .createdAt(listing.getCreatedAt())
                 .build();
+    }
+    private User getUserFromEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }

@@ -49,19 +49,27 @@ public class ListingController {
     }
 
     @PostMapping("/{id}/complete")
-    public ListingResponse completeListing(@PathVariable Long id) {
-        return listingService.completeListing(id);
+    public ListingResponse completeListing(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        return listingService.completeListing(id, authentication.getName());
     }
 
     @PostMapping("/{id}/cancel")
-    public ListingResponse cancelListing(@PathVariable Long id) {
-        return listingService.cancelListing(id);
+    public ListingResponse cancelListing(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        return listingService.cancelListing(id, authentication.getName());
     }
 
     @GetMapping("/{id}")
     public ListingResponse getListingById(@PathVariable Long id) {
+
         return listingService.getListingById(id);
     }
+
     @GetMapping("/owner/{ownerId}")
     public List<ListingResponse> getListingsByOwner(@PathVariable Long ownerId) {
         return listingService.getListingsByOwner(ownerId);
