@@ -1,0 +1,97 @@
+### ===== AUTH FLOW TESTS =====
+### IntelliJ HTTP Client - click on the green ▶ next to each request
+
+@host = http://localhost:8080
+@token = {{login.response.body.token}}
+
+### 1. Register a BUSINESS user
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Sebi Sava",
+  "email": "sebi@test.com",
+  "password": "parola123",
+  "role": "BUSINESS"
+}
+
+### 2. Register a regular USER
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Maria Pop",
+  "email": "maria@test.com",
+  "password": "parola123",
+  "role": "USER"
+}
+
+### 3. Register an ONG
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Banca de Alimente",
+  "email": "ong@test.com",
+  "password": "parola123",
+  "role": "ONG"
+}
+
+### 4. Login - saves token for next requests
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "sebi@test.com",
+  "password": "parola123"
+}
+
+### 5. Try to register with duplicate email (should fail with 500 -> later 409 if you add @RestControllerAdvice)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Duplicate",
+  "email": "sebi@test.com",
+  "password": "parola123",
+  "role": "USER"
+}
+
+### 6. Login with wrong password (should return 401)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "sebi@test.com",
+  "password": "gresit999"
+}
+
+### 7. Validation error - invalid email format (should return 400)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Bad",
+  "email": "not-an-email",
+  "password": "parola123",
+  "role": "USER"
+}
+
+### 8. Validation error - password too short (min 8 chars)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Bad",
+  "email": "short@test.com",
+  "password": "abc",
+  "role": "USER"
+}
+
+### 9. Test protected endpoint (should be 401 without token)
+GET {{host}}/api/some-future-protected-endpoint
+
+### 10. Test protected endpoint with token (still 404 since endpoint doesn't exist - but you'll see 401 vs 404 difference)
+GET {{host}}/api/some-future-protected-endpoint
+Authorization: Bearer {{token}}
