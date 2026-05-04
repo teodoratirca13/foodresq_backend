@@ -5,6 +5,7 @@ import com.foodresq.listing.dto.ListingResponse;
 import com.foodresq.listing.entity.Listing;
 import com.foodresq.listing.enums.ListingType;
 import com.foodresq.listing.service.ListingService;
+import org.springframework.security.core.Authentication;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +20,11 @@ public class ListingController {
     private final ListingService listingService;
 
     @PostMapping
-    public ListingResponse createListing(@Valid @RequestBody CreateListingRequest request) {
-        return listingService.createListing(request);
+    public ListingResponse createListing(
+            @Valid @RequestBody CreateListingRequest request,
+            Authentication authentication
+    ) {
+        return listingService.createListing(request, authentication.getName());
     }
 
     @GetMapping
@@ -31,17 +35,17 @@ public class ListingController {
     @PostMapping("/{id}/reserve")
     public ListingResponse reserveSale(
             @PathVariable Long id,
-            @RequestParam Long userId
+            Authentication authentication
     ) {
-        return listingService.reserveSale(id, userId);
+        return listingService.reserveSale(id, authentication.getName());
     }
 
     @PostMapping("/{id}/claim")
     public ListingResponse claimDonation(
             @PathVariable Long id,
-            @RequestParam Long ongId
+            Authentication authentication
     ) {
-        return listingService.claimDonation(id, ongId);
+        return listingService.claimDonation(id, authentication.getName());
     }
 
     @PostMapping("/{id}/complete")
@@ -71,4 +75,4 @@ public class ListingController {
     ) {
         return listingService.getNearbyListings(lat, lng, radiusKm);
     }
-}
+    }

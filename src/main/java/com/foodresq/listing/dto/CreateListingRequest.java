@@ -45,6 +45,4 @@ public class CreateListingRequest {
     @NotNull
     private ListingType type;
 
-    @NotNull
-    private Long ownerId;
 }

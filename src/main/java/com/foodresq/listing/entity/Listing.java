@@ -2,6 +2,7 @@ package com.foodresq.listing.entity;
 
 import com.foodresq.listing.enums.ListingStatus;
 import com.foodresq.listing.enums.ListingType;
+import com.foodresq.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,9 +44,13 @@ public class Listing {
     @Enumerated(EnumType.STRING)
     private ListingStatus status;
 
-    private Long ownerId;
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
 
-    private Long reservedByUserId;
+    @ManyToOne
+    @JoinColumn(name = "reserved_by_user_id")
+    private User reservedByUser;
 
     private LocalDateTime createdAt;
 }

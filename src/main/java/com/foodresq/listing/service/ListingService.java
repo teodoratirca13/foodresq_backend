@@ -8,6 +8,8 @@ import com.foodresq.listing.enums.ListingType;
 import com.foodresq.listing.repository.ListingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.foodresq.user.entity.User;
+import com.foodresq.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,8 +19,12 @@ import java.util.List;
 public class ListingService {
 
     private final ListingRepository listingRepository;
+    private final UserRepository userRepository;
 
-    public ListingResponse createListing(CreateListingRequest request) {
+    public ListingResponse createListing(CreateListingRequest request, String email){
+
+        User owner = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (request.getExpirationDate().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Expiration date must be in the future");
@@ -35,10 +41,6 @@ public class ListingService {
         if (request.getType() == ListingType.SALE) {
             if (request.getMinimumPrice() == null) {
                 throw new RuntimeException("Sale items must have a minimum price");
-            }
-
-            if (request.getDiscountPercentage() == null) {
-                throw new RuntimeException("Sale items must have a discount percentage");
             }
 
             if (request.getMinimumPrice().compareTo(request.getPrice()) > 0) {
@@ -58,8 +60,8 @@ public class ListingService {
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .type(request.getType())
+                .owner(owner)
                 .status(ListingStatus.ACTIVE)
-                .ownerId(request.getOwnerId())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -81,7 +83,8 @@ public class ListingService {
                 .toList();
     }
 
-    public ListingResponse reserveSale(Long listingId, Long userId) {
+    public ListingResponse reserveSale(Long listingId, String email) {
+
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
 
@@ -93,14 +96,18 @@ public class ListingService {
             throw new RuntimeException("The listing is not active");
         }
 
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         listing.setStatus(ListingStatus.RESERVED);
-        listing.setReservedByUserId(userId);
+        listing.setReservedByUser(user);
 
         Listing saved = listingRepository.save(listing);
         return mapToResponse(saved);
     }
 
-    public ListingResponse claimDonation(Long listingId, Long ongId) {
+    public ListingResponse claimDonation(Long listingId, String email) {
+
         Listing listing = listingRepository.findById(listingId)
                 .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
 
@@ -112,8 +119,11 @@ public class ListingService {
             throw new RuntimeException("The donation does not exist!");
         }
 
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         listing.setStatus(ListingStatus.RESERVED);
-        listing.setReservedByUserId(ongId);
+        listing.setReservedByUser(user);
 
         Listing saved = listingRepository.save(listing);
         return mapToResponse(saved);
@@ -197,7 +207,7 @@ public class ListingService {
                 .longitude(listing.getLongitude())
                 .type(listing.getType())
                 .status(listing.getStatus())
-                .ownerId(listing.getOwnerId())
+                .ownerId(listing.getOwner().getId())
                 .createdAt(listing.getCreatedAt())
                 .build();
     }
