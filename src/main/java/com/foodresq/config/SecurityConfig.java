@@ -39,6 +39,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/listings/*/cancel").authenticated()
 
                         .requestMatchers(HttpMethod.DELETE, "/api/listings/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/cart").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/cart/items").hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/cart/items/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/cart/checkout").hasRole("USER")
+                        .requestMatchers(HttpMethod.GET, "/api/orders/my").hasRole("USER")
 
                         .anyRequest().authenticated()
                 )
