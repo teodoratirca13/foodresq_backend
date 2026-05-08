@@ -1,5 +1,8 @@
 package com.foodresq.listing.service;
 
+import com.foodresq.common.exception.BadRequestException;
+import com.foodresq.common.exception.ForbiddenActionException;
+import com.foodresq.common.exception.ResourceNotFoundException;
 import com.foodresq.listing.dto.CreateListingRequest;
 import com.foodresq.listing.dto.ListingResponse;
 import com.foodresq.listing.entity.Listing;
@@ -7,10 +10,10 @@ import com.foodresq.listing.enums.ListingStatus;
 import com.foodresq.listing.enums.ListingType;
 import com.foodresq.listing.enums.ProductCategory;
 import com.foodresq.listing.repository.ListingRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import com.foodresq.user.entity.User;
 import com.foodresq.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,32 +25,42 @@ public class ListingService {
     private final ListingRepository listingRepository;
     private final UserRepository userRepository;
 
-    public ListingResponse createListing(CreateListingRequest request, String email){
+    public ListingResponse createListing(CreateListingRequest request, String email) {
 
         User owner = getUserFromEmail(email);
 
         if (request.getExpirationDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Expiration date must be in the future");
-        }
-
-        if (request.getType() == ListingType.DONATION && request.getPrice().doubleValue() != 0) {
-            throw new RuntimeException("Donations must have a price of 0");
-        }
-
-        if (request.getType() == ListingType.SALE && request.getPrice().doubleValue() <= 0) {
-            throw new RuntimeException("Sale items must have a price greater than 0");
+            throw new BadRequestException("Expiration date must be in the future");
         }
 
         if (request.getCategory() == null) {
-            throw new RuntimeException("Category is required");
+            throw new BadRequestException("Category is required");
         }
+
+        if (request.getType() == null) {
+            throw new BadRequestException("Listing type is required");
+        }
+
+        if (request.getType() == ListingType.DONATION) {
+            if (request.getPrice() != null && request.getPrice().doubleValue() != 0) {
+                throw new BadRequestException("Donations must have a price of 0");
+            }
+
+            request.setPrice(java.math.BigDecimal.ZERO);
+            request.setMinimumPrice(java.math.BigDecimal.ZERO);
+        }
+
         if (request.getType() == ListingType.SALE) {
+            if (request.getPrice() == null || request.getPrice().doubleValue() <= 0) {
+                throw new BadRequestException("Sale items must have a price greater than 0");
+            }
+
             if (request.getMinimumPrice() == null) {
-                throw new RuntimeException("Sale items must have a minimum price");
+                throw new BadRequestException("Sale items must have a minimum price");
             }
 
             if (request.getMinimumPrice().compareTo(request.getPrice()) > 0) {
-                throw new RuntimeException("Minimum price cannot be higher than the initial price");
+                throw new BadRequestException("Minimum price cannot be higher than the initial price");
             }
         }
 
@@ -75,16 +88,19 @@ public class ListingService {
 
     public ListingResponse reserveSale(Long listingId, String email) {
 
-        User user=getUserFromEmail(email);
-        Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
+        User user = getUserFromEmail(email);
+        Listing listing = getListingOrThrow(listingId);
 
         if (listing.getType() != ListingType.SALE) {
-            throw new RuntimeException("Only items for sale can be reserved");
+            throw new BadRequestException("Only items for sale can be reserved");
         }
 
         if (listing.getStatus() != ListingStatus.ACTIVE) {
-            throw new RuntimeException("The listing is not active");
+            throw new BadRequestException("The listing is not active");
+        }
+
+        if (listing.getOwner().getId().equals(user.getId())) {
+            throw new ForbiddenActionException("You cannot reserve your own listing");
         }
 
         listing.setStatus(ListingStatus.RESERVED);
@@ -95,18 +111,21 @@ public class ListingService {
     }
 
     public ListingResponse claimDonation(Long listingId, String email) {
+
         User user = getUserFromEmail(email);
-        Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
+        Listing listing = getListingOrThrow(listingId);
 
         if (listing.getType() != ListingType.DONATION) {
-            throw new RuntimeException("Only items for donation can be claimed");
+            throw new BadRequestException("Only donation listings can be claimed");
         }
 
         if (listing.getStatus() != ListingStatus.ACTIVE) {
-            throw new RuntimeException("The donation does not exist!");
+            throw new BadRequestException("The donation is not active");
         }
 
+        if (listing.getOwner().getId().equals(user.getId())) {
+            throw new ForbiddenActionException("You cannot claim your own donation");
+        }
 
         listing.setStatus(ListingStatus.RESERVED);
         listing.setReservedByUser(user);
@@ -116,13 +135,12 @@ public class ListingService {
     }
 
     public ListingResponse completeListing(Long listingId, String email) {
-        User user = getUserFromEmail(email);
 
-        Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
+        User user = getUserFromEmail(email);
+        Listing listing = getListingOrThrow(listingId);
 
         if (listing.getStatus() != ListingStatus.RESERVED) {
-            throw new RuntimeException("Only reserved listings can be completed");
+            throw new BadRequestException("Only reserved listings can be completed");
         }
 
         boolean isOwner = listing.getOwner().getId().equals(user.getId());
@@ -131,7 +149,7 @@ public class ListingService {
                 && listing.getReservedByUser().getId().equals(user.getId());
 
         if (!isOwner && !isReservedUser) {
-            throw new RuntimeException("You are not allowed to complete this listing");
+            throw new ForbiddenActionException("You are not allowed to complete this listing");
         }
 
         listing.setStatus(ListingStatus.COMPLETED);
@@ -141,17 +159,16 @@ public class ListingService {
     }
 
     public ListingResponse cancelListing(Long listingId, String email) {
-        User user = getUserFromEmail(email);
 
-        Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
+        User user = getUserFromEmail(email);
+        Listing listing = getListingOrThrow(listingId);
 
         if (!listing.getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Only the owner can cancel this listing");
+            throw new ForbiddenActionException("Only the owner can cancel this listing");
         }
 
         if (listing.getStatus() == ListingStatus.COMPLETED) {
-            throw new RuntimeException("A completed listing can no longer be cancelled");
+            throw new BadRequestException("A completed listing can no longer be cancelled");
         }
 
         listing.setStatus(ListingStatus.CANCELLED);
@@ -161,9 +178,7 @@ public class ListingService {
     }
 
     public ListingResponse getListingById(Long id) {
-        Listing listing = listingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("The listing does not exist!"));
-
+        Listing listing = getListingOrThrow(id);
         return mapToResponse(listing);
     }
 
@@ -175,11 +190,56 @@ public class ListingService {
     }
 
     public List<ListingResponse> getNearbyListings(Double lat, Double lng, Double radiusKm) {
+
+        if (lat == null || lng == null || radiusKm == null) {
+            throw new BadRequestException("Latitude, longitude and radius are required");
+        }
+
+        if (radiusKm <= 0) {
+            throw new BadRequestException("Radius must be greater than 0");
+        }
+
         return listingRepository.findByStatus(ListingStatus.ACTIVE)
                 .stream()
                 .filter(listing -> distanceKm(lat, lng, listing.getLatitude(), listing.getLongitude()) <= radiusKm)
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    public void deleteListing(Long listingId, String email) {
+
+        User user = getUserFromEmail(email);
+        Listing listing = getListingOrThrow(listingId);
+
+        if (!listing.getOwner().getId().equals(user.getId())) {
+            throw new ForbiddenActionException("Only owner can delete listing");
+        }
+
+        if (listing.getStatus() == ListingStatus.COMPLETED) {
+            throw new BadRequestException("Cannot delete completed listing");
+        }
+
+        listingRepository.delete(listing);
+    }
+
+    public List<ListingResponse> getActiveListings(ListingType type, ProductCategory category) {
+
+        return listingRepository.findByStatus(ListingStatus.ACTIVE)
+                .stream()
+                .filter(l -> type == null || l.getType() == type)
+                .filter(l -> category == null || l.getCategory() == category)
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    private Listing getListingOrThrow(Long listingId) {
+        return listingRepository.findById(listingId)
+                .orElseThrow(() -> new ResourceNotFoundException("The listing does not exist"));
+    }
+
+    private User getUserFromEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
@@ -198,6 +258,7 @@ public class ListingService {
 
         return earthRadiusKm * c;
     }
+
     private ListingResponse mapToResponse(Listing listing) {
         return ListingResponse.builder()
                 .id(listing.getId())
@@ -211,61 +272,11 @@ public class ListingService {
                 .category(listing.getCategory())
                 .type(listing.getType())
                 .status(listing.getStatus())
-
-                .ownerId(
-                        listing.getOwner() != null
-                                ? listing.getOwner().getId()
-                                : null
-                )
-                .ownerName(
-                        listing.getOwner() != null
-                                ? listing.getOwner().getName()
-                                : null
-                )
-
-                .reservedByUserId(
-                        listing.getReservedByUser() != null
-                                ? listing.getReservedByUser().getId()
-                                : null
-                )
-                .reservedByUserName(
-                        listing.getReservedByUser() != null
-                                ? listing.getReservedByUser().getName()
-                                : null
-                )
-
+                .ownerId(listing.getOwner() != null ? listing.getOwner().getId() : null)
+                .ownerName(listing.getOwner() != null ? listing.getOwner().getName() : null)
+                .reservedByUserId(listing.getReservedByUser() != null ? listing.getReservedByUser().getId() : null)
+                .reservedByUserName(listing.getReservedByUser() != null ? listing.getReservedByUser().getName() : null)
                 .createdAt(listing.getCreatedAt())
                 .build();
-    }
-    private User getUserFromEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-    public void deleteListing(Long listingId, String email) {
-        User user = getUserFromEmail(email);
-
-        Listing listing = listingRepository.findById(listingId)
-                .orElseThrow(() -> new RuntimeException("Listing does not exist"));
-
-        //validare owner
-        if (!listing.getOwner().getId().equals(user.getId())) {
-            throw new RuntimeException("Only owner can delete listing");
-        }
-
-        //nu poti sterge daca e complet
-        if (listing.getStatus() == ListingStatus.COMPLETED) {
-            throw new RuntimeException("Cannot delete completed listing");
-        }
-
-        listingRepository.delete(listing);
-    }
-    public List<ListingResponse> getActiveListings(ListingType type, ProductCategory category) {
-
-        return listingRepository.findByStatus(ListingStatus.ACTIVE)
-                .stream()
-                .filter(l -> type == null || l.getType() == type)
-                .filter(l -> category == null || l.getCategory() == category)
-                .map(this::mapToResponse)
-                .toList();
     }
 }
