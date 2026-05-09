@@ -51,12 +51,12 @@ The database connection is configured through environment variables:
 2. Edit `.env` with your actual Neon database credentials:
    ```properties
    # Database Connection
-   DB_URL=jdbc:postgresql://ep-misty-wave-al8wpjj3.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require
-   DB_USERNAME=neondb_owner
-   DB_PASSWORD=npg_2NIcshKERYZ7
+   DB_URL=jdbc:postgresql://**.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require
+   DB_USERNAME=**
+   DB_PASSWORD=**
    
    # JWT Configuration (override in production)
-   APP_JWT_SECRET=ZGV2LW9ubHktY2hhbmdlLW1lLWluLXByb2R1Y3Rpb24tcGxlYXNlLXVzZS1hLWxvbmctc2VjcmV0
+   APP_JWT_SECRET=
    APP_JWT_EXPIRATION_MS=86400000
    
    # Server Configuration
