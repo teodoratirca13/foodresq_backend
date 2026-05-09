@@ -15,6 +15,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
@@ -59,6 +64,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/cart/items/**").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/cart/checkout").hasRole("USER")
                         .requestMatchers(HttpMethod.GET, "/api/orders/my").hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/cart").hasRole("USER")
 
                         .anyRequest().authenticated()
                 )
