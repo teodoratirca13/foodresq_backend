@@ -48,20 +48,20 @@ The database connection is configured through environment variables:
    cp .env.example .env
    ```
 
-2. Edit `.env` with your actual Neon database credentials:
-   ```properties
-   # Database Connection
-   DB_URL=jdbc:postgresql://ep-misty-wave-al8wpjj3.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require
-   DB_USERNAME=neondb_owner
-   DB_PASSWORD=npg_2NIcshKERYZ7
-   
-   # JWT Configuration (override in production)
-   APP_JWT_SECRET=ZGV2LW9ubHktY2hhbmdlLW1lLWluLXByb2R1Y3Rpb24tcGxlYXNlLXVzZS1hLWxvbmctc2VjcmV0
-   APP_JWT_EXPIRATION_MS=86400000
-   
-   # Server Configuration
-   SERVER_PORT=8080
-   ```
+    2. Edit `.env` with your actual Neon database credentials:
+    ```properties
+    # Database Connection
+    DB_URL=jdbc:postgresql://your-neon-host.neon.tech/your-db-name?sslmode=require
+    DB_USERNAME=your-username
+    DB_PASSWORD=your-password
+    
+    # JWT Configuration (override in production)
+    APP_JWT_SECRET=your-base64-encoded-secret-min-32-bytes
+    APP_JWT_EXPIRATION_MS=86400000
+    
+    # Server Configuration
+    SERVER_PORT=8080
+    ```
 
 > **Important**: The `.env` file is excluded from version control via `.gitignore` to protect your secrets.
 
