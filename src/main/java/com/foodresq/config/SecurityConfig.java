@@ -38,6 +38,7 @@ public class SecurityConfig {
 
         List<String> origins = new java.util.ArrayList<>();
         origins.add("http://localhost:3000");
+        origins.add("https://foodresq-rouge.vercel.app");
         if (corsAllowedOrigins != null && !corsAllowedOrigins.isBlank()) {
             origins.addAll(Arrays.asList(corsAllowedOrigins.split(",")));
         }
