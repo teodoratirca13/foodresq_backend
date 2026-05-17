@@ -46,6 +46,7 @@ public class CreateListingRequest {
     @NotNull
     private ListingType type;
 
+    @NotNull
     private ProductCategory category;
 
 }
