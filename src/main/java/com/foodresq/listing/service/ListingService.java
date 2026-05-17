@@ -55,10 +55,6 @@ public class ListingService {
                 throw new BadRequestException("Sale items must have a price greater than 0");
             }
 
-            if (request.getMinimumPrice() == null) {
-                throw new BadRequestException("Sale items must have a minimum price");
-            }
-
             if (request.getMinimumPrice().compareTo(request.getPrice()) > 0) {
                 throw new BadRequestException("Minimum price cannot be higher than the initial price");
             }
