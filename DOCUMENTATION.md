@@ -5,7 +5,7 @@ This document details the verified configuration and functionality of the FoodRe
 ## 1. Database Connection to Neon Cloud PostgreSQL
 
 ### Connection Details Verified:
-- **Host**: `ep-misty-wave-al8wpjj3.c-3.eu-central-1.aws.neon.tech`
+- **Host**: `<your-neon-host>.neon.tech`
 - **Database**: `neondb`
 - **JDBC URL Format**: `jdbc:postgresql://[HOST]/[DATABASE]?sslmode=require`
 - **SSL Requirement**: Enforced via `sslmode=require` parameter (mandatory for Neon)
@@ -17,9 +17,9 @@ This document details the verified configuration and functionality of the FoodRe
 The database connection is configured in `src/main/resources/application.properties` using environment variables with safe fallbacks:
 
 ```properties
-spring.datasource.url=${DB_URL:jdbc:postgresql://ep-misty-wave-al8wpjj3.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require}
-spring.datasource.username=${DB_USERNAME:neondb_owner}
-spring.datasource.password=${DB_PASSWORD:npg_2NIcshKERYZ7}
+spring.datasource.url=${DB_URL:jdbc:postgresql://your-neon-host.neon.tech/your-db-name?sslmode=require}
+spring.datasource.username=${DB_USERNAME:your_username}
+spring.datasource.password=${DB_PASSWORD:your_password}
 spring.datasource.driver-class-name=org.postgresql.Driver
 ```
 
@@ -44,7 +44,7 @@ spring.datasource.driver-class-name=org.postgresql.Driver
   - `iat`: Issued at timestamp
   - `exp`: Expiration timestamp (24 hours from issuance)
 - **Secret**: Base64-encoded secret (minimum 32 bytes when decoded)
-  - Default: `ZGV2LW9ubHktY2hhbmdlLW1lLWluLXByb2R1Y3Rpb24tcGxlYXNlLXVzZS1hLWxvbmctc2VjcmV0`
+  - Default: `<your-base64-encoded-secret>`
   - Should be overridden via `APP_JWT_SECRET` environment variable in production
 
 ### Authentication Flow:
@@ -146,10 +146,10 @@ Successfully executed end-to-end test demonstrating:
 
 **Method 1: Export Variables (Linux/macOS)**
 ```bash
-export DB_URL="jdbc:postgresql://ep-misty-wave-al8wpjj3.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"
-export DB_USERNAME="neondb_owner"
-export DB_PASSWORD="npg_2NIcshKERYZ7"
-export APP_JWT_SECRET="ZGV2LW9ubHktY2hhbmdlLW1lLWluLXByb2R1Y3Rpb24tcGxlYXNlLXVzZS1hLWxvbmctc2VjcmV0"
+export DB_URL="jdbc:postgresql://your-neon-host.neon.tech/your-db-name?sslmode=require"
+export DB_USERNAME="your_username"
+export DB_PASSWORD="your_password"
+export APP_JWT_SECRET="your_base64_encoded_secret"
 export APP_JWT_EXPIRATION_MS="86400000"
 export SERVER_PORT="8080"
 
