@@ -38,6 +38,7 @@ public class SecurityConfig {
 
         List<String> origins = new java.util.ArrayList<>();
         origins.add("http://localhost:3000");
+        origins.add("https://foodresq-rouge.vercel.app");
         if (corsAllowedOrigins != null && !corsAllowedOrigins.isBlank()) {
             origins.addAll(Arrays.asList(corsAllowedOrigins.split(",")));
         }
@@ -71,7 +72,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/error").permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
